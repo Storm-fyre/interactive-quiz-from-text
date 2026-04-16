@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPSC Interactive Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .hidden {
+            display: none;
+        }
+        
+        /* Prompts Section */
+        .prompts-container {
+            background-color: #f8f9fa;
+            border: 1px dashed #bdc3c7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .prompt-box {
+            background: #eef2f5;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            border: 1px solid #dcdde1;
+        }
+
+        /* Question Block */
+        .question-block {
+            margin-top: 40px;
+            margin-bottom: 40px;
+            padding: 30px 20px 20px 20px;
+            background-color: #fdfdfd;
+            border: 1px solid #e1e8ed;
+            border-top: 4px solid #3498db;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .q-badge {
+            position: absolute;
+            top: -16px;
+            left: 20px;
+            background-color: #3498db;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.4);
+        }
+        .question-text {
+            white-space: pre-wrap; 
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .options-container {
+            display: flex;
+            gap: 15px;
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 40px;
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            color: #34495e;
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+        }
+        .option-label input {
+            display: none;
+        }
+        .option-label:hover {
+            background: #e0e6ed;
+            border-color: #aeb6bf;
+        }
+        .option-label.selected {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        .option-label.correct {
+            background: #2ecc71 !important;
+            color: white !important;
+            border-color: #27ae60 !important;
+        }
+        .option-label.wrong {
+            background: #e74c3c !important;
+            color: white !important;
+            border-color: #c0392b !important;
+        }
+        
+        /* Result Box */
+        .result-box {
+            padding: 20px;
+            background: #fdfae4;
+            border: 2px solid #f1c40f;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .main-score {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            color: #d35400;
+            margin-bottom: 10px;
+        }
+        details {
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #f39c12;
+            margin-top: 10px;
+        }
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+            color: #e67e22;
+            outline: none;
+        }
+        .stats-list {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 10px;
+            font-size: 15px;
+            line-height: 1.8;
+        }
+        .stats-list li {
+            border-bottom: 1px dashed #ccc;
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- SCREEN 1 -->
+    <div id="screen-1">
+        <h1>UPSC Simulator</h1>
+        
+        <!-- Reduced to just ONE prompt -->
+        <button class="btn-secondary" onclick="togglePrompts()" style="margin-bottom: 20px;">📘 Show AI Prompt for Question Generation</button>
+        <div id="prompts-section" class="prompts-container hidden">
+            <strong>Copy and paste this into any AI to generate your test:</strong>
+            <div class="prompt-box">Act as an expert UPSC CSE examiner. Generate exactly 5 Prelims-level Multiple Choice Questions (MCQs) based on the 'Financial Markets' chapter in Economics.
+Strict Formatting & Content Constraints:
+A. Output the questions first, and provide the answer key at the very end.
+B. Match the exact difficulty, trickiness, and complexity of recent UPSC CSE Prelims.
+C. Ensure a diverse mix of all UPSC Prelims formats. Include direct single-choice questions (traditional word/phrase options), newer quantity-based codes (e.g., "Only two statements"), standard combination codes (e.g., "A and B only"), matching pairs, Assertion/Reason, etc.
+D. Start each question exactly like "Q1) ", "Q2) ", etc., with the question text continuing on the exact same line.
+E. When listing statements or pairs within the question, use capital alphabetical lists (A, B, C) instead of numbers or roman numerals to make copy-pasting easier.
+F. Format the four final options strictly as a), b), c), and d).</div>
+        </div>
+
+        <p>Paste your full block of questions below:</p>
+        <textarea id="questions-input" placeholder="Paste questions here..."></textarea>
+        <button onclick="startExam()">Start Exam</button>
+    </div>
+
+    <!-- SCREEN 2 -->
+    <div id="screen-2" class="hidden">
+        <h2>Exam in Progress</h2>
+        <div id="exam-container"></div>
+        <button onclick="submitExam()">Submit Exam</button>
+    </div>
+
+    <!-- SCREEN 3 -->
+    <div id="screen-3" class="hidden">
+        <h2>Exam Submitted!</h2>
+        <!-- Updated Instructions -->
+        <p>Now, paste your answer key below.<br>
+        <small style="color:#7f8c8d;"><i>(Any format works: <strong>1.a 2.b</strong>, or <strong>1) a</strong>, or <strong>a b c d</strong>, or straight from the AI)</i></small></p>
+        <textarea id="key-input" style="height: 150px;" placeholder="Paste answer key here..."></textarea>
+        <button onclick="evaluateExam()" style="background-color: #2ecc71;">Evaluate Results</button>
+    </div>
+
+    <!-- SCREEN 4 -->
+    <div id="screen-4" class="hidden">
+        <div class="result-box" id="score-display"></div>
+        <div id="results-container"></div>
+        <button onclick="location.reload()" style="background-color: #95a5a6;">Start Over</button>
+    </div>
+</div>
+
+<script>
+    let totalQuestions = 0;
+    let questionsHtml = "";
+
+    function togglePrompts() {
+        const sec = document.getElementById('prompts-section');
+        sec.classList.toggle('hidden');
+    }
+
+    function startExam() {
+        const rawText = document.getElementById("questions-input").value;
+        if (!rawText.trim()) {
+            alert("Please paste some questions first!");
+            return;
+        }
+
+        const qBlocks = rawText.split(/(?=Q\d+[\)\.])/i).filter(b => b.trim() !== '');
+        totalQuestions = qBlocks.length;
+        
+        const container = document.getElementById("exam-container");
+        container.innerHTML = "";
+
+        qBlocks.forEach((block, index) => {
+            let qText = block.trim();
+            let qNumber = `Q ${index + 1}`; 
+            
+            const match = qText.match(/^(Q\s*\d+[\)\.]?)\s*/i);
+            if (match) {
+                qNumber = match[1].toUpperCase(); 
+                qText = qText.substring(match[0].length).trim(); 
+            }
+
+            const div = document.createElement('div');
+            div.className = 'question-block';
+            
+            const badge = document.createElement('div');
+            badge.className = 'q-badge';
+            badge.innerText = qNumber;
+            div.appendChild(badge);
+
+            const p = document.createElement('div');
+            p.className = 'question-text';
+            p.innerText = qText;
+            div.appendChild(p);
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options-container';['a', 'b', 'c', 'd'].forEach(opt => {
+                const label = document.createElement('label');
+                label.className = `option-label q${index}-label`;
+                label.id = `label-q${index}-${opt}`;
+                label.onclick = (e) => {
+                    e.preventDefault(); 
+                    selectOption(index, opt);
+                };
+                label.innerHTML = `
+                    <input type="radio" name="q${index}" value="${opt}">
+                    ${opt.toUpperCase()}
+                `;
+                optionsDiv.appendChild(label);
+            });
+            div.appendChild(optionsDiv);
+            container.appendChild(div);
+        });
+
+        document.getElementById("screen-1").classList.add("hidden");
+        document.getElementById("screen-2").classList.remove("hidden");
+    }
+
+    function selectOption(qIndex, optValue) {
+        const clickedLabel = document.getElementById(`label-q${qIndex}-${optValue}`);
+        const radio = clickedLabel.querySelector('input');
+
+        if (clickedLabel.classList.contains('selected')) {
+            clickedLabel.classList.remove('selected');
+            radio.checked = false;
+        } else {
+            const labels = document.querySelectorAll(`.q${qIndex}-label`);
+            labels.forEach(lbl => {
+                lbl.classList.remove('selected');
+                lbl.querySelector('input').checked = false;
+            });
+            clickedLabel.classList.add('selected');
+            radio.checked = true;
+        }
+    }
+
+    function submitExam() {
+        let answered = 0;
+        for (let i = 0; i < totalQuestions; i++) {
+            if (document.querySelector(`input[name="q${i}"]:checked`)) answered++;
+        }
+        
+        if (answered < totalQuestions) {
+            if(!confirm(`You only attempted ${answered} out of ${totalQuestions} questions. Are you sure you want to submit?`)) {
+                return;
+            }
+        }
+
+        questionsHtml = document.getElementById("exam-container").innerHTML;
+        document.getElementById("screen-2").classList.add("hidden");
+        document.getElementById("screen-3").classList.remove("hidden");
+    }
+
+    function evaluateExam() {
+        const rawKey = document.getElementById("key-input").value;
+        
+        // NEW SMART REGEX PARSER:
+        // Extracts a, b, c, or d ONLY if it is NOT part of a larger word. 
+        // Works for: "1.a", "1) a", "a b c", or conversational text.
+        const matches = rawKey.match(/(?<![a-zA-Z])[a-d](?![a-zA-Z])/gi);
+        const keys = matches ? matches.map(m => m.toLowerCase()) :[];
+
+        if (keys.length < totalQuestions) {
+            alert(`Could not find enough answer keys. Found ${keys.length}, but you have ${totalQuestions} questions. Make sure your key has a,b,c,d options clearly visible.`);
+            return;
+        }
+
+        document.getElementById("screen-3").classList.add("hidden");
+        document.getElementById("screen-4").classList.remove("hidden");
+
+        const resultsContainer = document.getElementById("results-container");
+        resultsContainer.innerHTML = questionsHtml; 
+
+        let correct = 0;
+        let wrong = 0;
+        let unattempted = 0;
+
+        for (let i = 0; i < totalQuestions; i++) {
+            const correctOpt = keys[i];
+            
+            const userRadio = document.querySelector(`input[name="q${i}"]:checked`);
+            const userOpt = userRadio ? userRadio.value : null;
+
+            const labels = resultsContainer.querySelectorAll(`.q${i}-label`);
+            labels.forEach(lbl => lbl.onclick = null);
+
+            const correctLabel = resultsContainer.querySelector(`#label-q${i}-${correctOpt}`);
+            if (correctLabel) correctLabel.classList.add('correct');
+
+            if (!userOpt) {
+                unattempted++;
+            } else if (userOpt === correctOpt) {
+                correct++;
+            } else {
+                wrong++;
+                const wrongLabel = resultsContainer.querySelector(`#label-q${i}-${userOpt}`);
+                if (wrongLabel) wrongLabel.classList.add('wrong');
+            }
+        }
+
+        const marksCorrect = correct * 2;
+        const marksWrong = wrong * (2/3); 
+        const totalUPSCScore = marksCorrect - marksWrong;
+        
+        const totalMaxMarks = totalQuestions * 2;
+        const extrapolated200 = (totalUPSCScore / totalMaxMarks) * 200;
+
+        document.getElementById("score-display").innerHTML = `
+            <div class="main-score">Score: ${correct} / ${totalQuestions}</div>
+            <details>
+                <summary>Expand UPSC Score Details</summary>
+                <ul class="stats-list">
+                    <li><strong>Correct Answers:</strong> ${correct} (+${marksCorrect} marks)</li>
+                    <li><strong>Wrong Answers:</strong> ${wrong} (-${marksWrong.toFixed(2)} marks)</li>
+                    <li><strong>Unattempted:</strong> ${unattempted} (0 marks)</li>
+                    <li><strong>UPSC Format Score:</strong> ${totalUPSCScore.toFixed(2)} / ${totalMaxMarks}</li>
+                    <li><strong>Extrapolated Prelims Marks:</strong> <span style="color:#c0392b; font-weight:bold;">${extrapolated200.toFixed(2)} / 200</span></li>
+                </ul>
+            </details>
+        `;
+    }
+</script>
+
+</body>
+</html>
