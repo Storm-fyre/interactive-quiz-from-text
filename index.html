@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPSC Interactive Simulator</title>
+    <title>UPSC CSE Prelims Interactive Simulator</title>
+    <!-- Library to handle screenshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -71,16 +73,31 @@
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;
+            position: relative;
         }
         .prompt-box {
             background: #eef2f5;
             padding: 15px;
+            padding-bottom: 45px; 
             border-radius: 4px;
             font-family: monospace;
             font-size: 13px;
             line-height: 1.5;
             white-space: pre-wrap;
             border: 1px solid #dcdde1;
+        }
+        .copy-btn {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            width: auto;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-top: 0;
+            background-color: #27ae60;
+        }
+        .copy-btn:hover {
+            background-color: #219150;
         }
 
         /* Question Block */
@@ -185,7 +202,18 @@
             cursor: pointer;
             color: #e67e22;
             outline: none;
+            /* FIXED: Removes the "1." or triangle from screenshots */
+            list-style: none;
+            list-style-type: none;
         }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary::marker {
+            display: none;
+            content: "";
+        }
+        
         .stats-list {
             list-style: none;
             padding-left: 0;
@@ -197,27 +225,36 @@
             border-bottom: 1px dashed #ccc;
             padding: 5px 0;
         }
+
+        .btn-download {
+            background-color: #8e44ad;
+            margin-top: 10px;
+        }
+        .btn-download:hover {
+            background-color: #7d3c98;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="main-capture-area">
     <!-- SCREEN 1 -->
     <div id="screen-1">
-        <h1>UPSC Simulator</h1>
+        <h1>UPSC CSE Prelims Simulator</h1>
         
-        <!-- Reduced to just ONE prompt -->
         <button class="btn-secondary" onclick="togglePrompts()" style="margin-bottom: 20px;">📘 Show AI Prompt for Question Generation</button>
         <div id="prompts-section" class="prompts-container hidden">
             <strong>Copy and paste this into any AI to generate your test:</strong>
-            <div class="prompt-box">Act as an expert UPSC CSE examiner. Generate exactly 5 Prelims-level Multiple Choice Questions (MCQs) based on the 'Financial Markets' chapter in Economics.
+            <div class="prompt-box" id="prompt-text">Act as an expert UPSC CSE examiner. Generate exactly 5 Prelims-level Multiple Choice Questions (MCQs) based on the:
+'Financial Markets' chapter in Economics.
 Strict Formatting & Content Constraints:
-A. Output the questions first, and provide the answer key at the very end.
+A. Output ONLY the questions. Do NOT provide the answer key, hints, or explanations in this response. I will ask for the answer key separately in my next message. When I ask key later, do not give any explanations or solutions. Just key will be sufficient.
 B. Match the exact difficulty, trickiness, and complexity of recent UPSC CSE Prelims.
 C. Ensure a diverse mix of all UPSC Prelims formats. Include direct single-choice questions (traditional word/phrase options), newer quantity-based codes (e.g., "Only two statements"), standard combination codes (e.g., "A and B only"), matching pairs, Assertion/Reason, etc.
 D. Start each question exactly like "Q1) ", "Q2) ", etc., with the question text continuing on the exact same line.
 E. When listing statements or pairs within the question, use capital alphabetical lists (A, B, C) instead of numbers or roman numerals to make copy-pasting easier.
 F. Format the four final options strictly as a), b), c), and d).</div>
+            <button class="copy-btn" onclick="copyPrompt()">Copy</button>
         </div>
 
         <p>Paste your full block of questions below:</p>
@@ -235,7 +272,6 @@ F. Format the four final options strictly as a), b), c), and d).</div>
     <!-- SCREEN 3 -->
     <div id="screen-3" class="hidden">
         <h2>Exam Submitted!</h2>
-        <!-- Updated Instructions -->
         <p>Now, paste your answer key below.<br>
         <small style="color:#7f8c8d;"><i>(Any format works: <strong>1.a 2.b</strong>, or <strong>1) a</strong>, or <strong>a b c d</strong>, or straight from the AI)</i></small></p>
         <textarea id="key-input" style="height: 150px;" placeholder="Paste answer key here..."></textarea>
@@ -246,6 +282,8 @@ F. Format the four final options strictly as a), b), c), and d).</div>
     <div id="screen-4" class="hidden">
         <div class="result-box" id="score-display"></div>
         <div id="results-container"></div>
+        
+        <button onclick="downloadScreenshot()" class="btn-download">📸 Download Result Screenshot</button>
         <button onclick="location.reload()" style="background-color: #95a5a6;">Start Over</button>
     </div>
 </div>
@@ -257,6 +295,15 @@ F. Format the four final options strictly as a), b), c), and d).</div>
     function togglePrompts() {
         const sec = document.getElementById('prompts-section');
         sec.classList.toggle('hidden');
+    }
+
+    function copyPrompt() {
+        const text = document.getElementById('prompt-text').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.querySelector('.copy-btn');
+            btn.innerText = 'Copied!';
+            setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+        });
     }
 
     function startExam() {
@@ -275,39 +322,29 @@ F. Format the four final options strictly as a), b), c), and d).</div>
         qBlocks.forEach((block, index) => {
             let qText = block.trim();
             let qNumber = `Q ${index + 1}`; 
-            
             const match = qText.match(/^(Q\s*\d+[\)\.]?)\s*/i);
             if (match) {
                 qNumber = match[1].toUpperCase(); 
                 qText = qText.substring(match[0].length).trim(); 
             }
-
             const div = document.createElement('div');
             div.className = 'question-block';
-            
             const badge = document.createElement('div');
             badge.className = 'q-badge';
             badge.innerText = qNumber;
             div.appendChild(badge);
-
             const p = document.createElement('div');
             p.className = 'question-text';
             p.innerText = qText;
             div.appendChild(p);
-
             const optionsDiv = document.createElement('div');
-            optionsDiv.className = 'options-container';['a', 'b', 'c', 'd'].forEach(opt => {
+            optionsDiv.className = 'options-container';
+            ['a', 'b', 'c', 'd'].forEach(opt => {
                 const label = document.createElement('label');
                 label.className = `option-label q${index}-label`;
                 label.id = `label-q${index}-${opt}`;
-                label.onclick = (e) => {
-                    e.preventDefault(); 
-                    selectOption(index, opt);
-                };
-                label.innerHTML = `
-                    <input type="radio" name="q${index}" value="${opt}">
-                    ${opt.toUpperCase()}
-                `;
+                label.onclick = (e) => { e.preventDefault(); selectOption(index, opt); };
+                label.innerHTML = `<input type="radio" name="q${index}" value="${opt}">${opt.toUpperCase()}`;
                 optionsDiv.appendChild(label);
             });
             div.appendChild(optionsDiv);
@@ -321,7 +358,6 @@ F. Format the four final options strictly as a), b), c), and d).</div>
     function selectOption(qIndex, optValue) {
         const clickedLabel = document.getElementById(`label-q${qIndex}-${optValue}`);
         const radio = clickedLabel.querySelector('input');
-
         if (clickedLabel.classList.contains('selected')) {
             clickedLabel.classList.remove('selected');
             radio.checked = false;
@@ -341,13 +377,9 @@ F. Format the four final options strictly as a), b), c), and d).</div>
         for (let i = 0; i < totalQuestions; i++) {
             if (document.querySelector(`input[name="q${i}"]:checked`)) answered++;
         }
-        
         if (answered < totalQuestions) {
-            if(!confirm(`You only attempted ${answered} out of ${totalQuestions} questions. Are you sure you want to submit?`)) {
-                return;
-            }
+            if(!confirm(`You only attempted ${answered} out of ${totalQuestions} questions. Submit anyway?`)) return;
         }
-
         questionsHtml = document.getElementById("exam-container").innerHTML;
         document.getElementById("screen-2").classList.add("hidden");
         document.getElementById("screen-3").classList.remove("hidden");
@@ -355,15 +387,11 @@ F. Format the four final options strictly as a), b), c), and d).</div>
 
     function evaluateExam() {
         const rawKey = document.getElementById("key-input").value;
-        
-        // NEW SMART REGEX PARSER:
-        // Extracts a, b, c, or d ONLY if it is NOT part of a larger word. 
-        // Works for: "1.a", "1) a", "a b c", or conversational text.
         const matches = rawKey.match(/(?<![a-zA-Z])[a-d](?![a-zA-Z])/gi);
         const keys = matches ? matches.map(m => m.toLowerCase()) :[];
 
         if (keys.length < totalQuestions) {
-            alert(`Could not find enough answer keys. Found ${keys.length}, but you have ${totalQuestions} questions. Make sure your key has a,b,c,d options clearly visible.`);
+            alert(`Could not find enough answer keys. Found ${keys.length}/${totalQuestions}.`);
             return;
         }
 
@@ -373,27 +401,21 @@ F. Format the four final options strictly as a), b), c), and d).</div>
         const resultsContainer = document.getElementById("results-container");
         resultsContainer.innerHTML = questionsHtml; 
 
-        let correct = 0;
-        let wrong = 0;
-        let unattempted = 0;
+        let correct = 0, wrong = 0, unattempted = 0;
 
         for (let i = 0; i < totalQuestions; i++) {
             const correctOpt = keys[i];
-            
             const userRadio = document.querySelector(`input[name="q${i}"]:checked`);
             const userOpt = userRadio ? userRadio.value : null;
-
             const labels = resultsContainer.querySelectorAll(`.q${i}-label`);
             labels.forEach(lbl => lbl.onclick = null);
 
             const correctLabel = resultsContainer.querySelector(`#label-q${i}-${correctOpt}`);
             if (correctLabel) correctLabel.classList.add('correct');
 
-            if (!userOpt) {
-                unattempted++;
-            } else if (userOpt === correctOpt) {
-                correct++;
-            } else {
+            if (!userOpt) unattempted++;
+            else if (userOpt === correctOpt) correct++;
+            else {
                 wrong++;
                 const wrongLabel = resultsContainer.querySelector(`#label-q${i}-${userOpt}`);
                 if (wrongLabel) wrongLabel.classList.add('wrong');
@@ -403,23 +425,39 @@ F. Format the four final options strictly as a), b), c), and d).</div>
         const marksCorrect = correct * 2;
         const marksWrong = wrong * (2/3); 
         const totalUPSCScore = marksCorrect - marksWrong;
-        
         const totalMaxMarks = totalQuestions * 2;
         const extrapolated200 = (totalUPSCScore / totalMaxMarks) * 200;
 
         document.getElementById("score-display").innerHTML = `
             <div class="main-score">Score: ${correct} / ${totalQuestions}</div>
-            <details>
-                <summary>Expand UPSC Score Details</summary>
+            <details id="score-details-el">
+                <summary>Expand UPSC CSE Score Details</summary>
                 <ul class="stats-list">
                     <li><strong>Correct Answers:</strong> ${correct} (+${marksCorrect} marks)</li>
                     <li><strong>Wrong Answers:</strong> ${wrong} (-${marksWrong.toFixed(2)} marks)</li>
                     <li><strong>Unattempted:</strong> ${unattempted} (0 marks)</li>
-                    <li><strong>UPSC Format Score:</strong> ${totalUPSCScore.toFixed(2)} / ${totalMaxMarks}</li>
+                    <li><strong>UPSC CSE Format Score:</strong> ${totalUPSCScore.toFixed(2)} / ${totalMaxMarks}</li>
                     <li><strong>Extrapolated Prelims Marks:</strong> <span style="color:#c0392b; font-weight:bold;">${extrapolated200.toFixed(2)} / 200</span></li>
                 </ul>
             </details>
         `;
+    }
+
+    function downloadScreenshot() {
+        const details = document.getElementById('score-details-el');
+        if(details) details.open = true;
+
+        const captureArea = document.getElementById('main-capture-area');
+        
+        html2canvas(captureArea, {
+            backgroundColor: "#f4f7f6",
+            scale: 2 
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'UPSC_CSE_Result.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
     }
 </script>
 
