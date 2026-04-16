@@ -151,6 +151,7 @@
             color: #34495e;
             transition: all 0.2s ease-in-out;
             user-select: none;
+            box-sizing: border-box;
         }
         .option-label input {
             display: none;
@@ -173,6 +174,13 @@
             background: #e74c3c !important;
             color: white !important;
             border-color: #c0392b !important;
+        }
+        
+        /* NEW: Highlight for the specific option the user chose */
+        .option-label.user-choice {
+            border: 4px solid #2c3e50 !important;
+            /* Adds a subtle white ring to separate the dark border from red/green fills */
+            box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.4);
         }
         
         /* Result Box */
@@ -202,7 +210,6 @@
             cursor: pointer;
             color: #e67e22;
             outline: none;
-            /* FIXED: Removes the "1." or triangle from screenshots */
             list-style: none;
             list-style-type: none;
         }
@@ -410,15 +417,26 @@ F. Format the four final options strictly as a), b), c), and d).</div>
             const labels = resultsContainer.querySelectorAll(`.q${i}-label`);
             labels.forEach(lbl => lbl.onclick = null);
 
+            // Always mark the correct answer green
             const correctLabel = resultsContainer.querySelector(`#label-q${i}-${correctOpt}`);
             if (correctLabel) correctLabel.classList.add('correct');
 
-            if (!userOpt) unattempted++;
-            else if (userOpt === correctOpt) correct++;
-            else {
-                wrong++;
-                const wrongLabel = resultsContainer.querySelector(`#label-q${i}-${userOpt}`);
-                if (wrongLabel) wrongLabel.classList.add('wrong');
+            if (!userOpt) {
+                // User didn't attempt
+                unattempted++;
+            } else {
+                // Apply the thick "User Choice" border to whatever option the user actually clicked
+                const userLabel = resultsContainer.querySelector(`#label-q${i}-${userOpt}`);
+                if (userLabel) userLabel.classList.add('user-choice');
+
+                if (userOpt === correctOpt) {
+                    correct++;
+                } else {
+                    wrong++;
+                    // Mark user's wrong answer as red (thick border stays on top of it)
+                    const wrongLabel = resultsContainer.querySelector(`#label-q${i}-${userOpt}`);
+                    if (wrongLabel) wrongLabel.classList.add('wrong');
+                }
             }
         }
 
